@@ -17,28 +17,26 @@ import (
 func main() {
 	var cpuFlag bool
 	var memFlag bool
-
-	//REVISAR HERRAMIENTA
+	//Revisar herramienta
 	var rootCmd = &cobra.Command{
 		Use:   "monitoreo",
 		Short: "Herramienta CLI para monitorear recursos del sistema",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Debe pasar un flag (--cpu || --mem)")
+			if cpuFlag {
+				monitorCPU()
+			} else if memFlag {
+				monitorMemory()
+			} else {
+				fmt.Println("Debe pasar un flag (--cpu || --mem)")
+			}
 		},
 	}
 
-	rootCmd.PersistentFlags().BoolVar(&cpuFlag, "cpu", false, "Monitoreo de CPU")
-	rootCmd.PersistentFlags().BoolVar(&memFlag, "mem", false, "Monitoreo de memoria")
+	rootCmd.Flags().BoolVar(&cpuFlag, "cpu", false, "Monitoreo de CPU")
+	rootCmd.Flags().BoolVar(&memFlag, "mem", false, "Monitoreo de memoria")
 
 	rootCmd.Execute()
 	//
-
-	if cpuFlag {
-		monitorCPU()
-	}
-	if memFlag {
-		monitorMemory()
-	}
 }
 
 func monitorCPU() {
@@ -53,12 +51,8 @@ func monitorCPU() {
 	go monitor.MonitoreoCPU(cpuData, &wg, done, abb)
 	go func() {
 		for usage := range cpuData {
-			fmt.Printf("\r")
-			// Limpiar la pantalla antes de imprimir (opcional)
 			fmt.Printf("\nUso de CPU: %.2f%%", usage)
-			// Mostrar los procesos almacenados en el ABB
-			fmt.Println("\nProcesos con más uso de CPU (ordenados):")
-			// Aquí podrías agregar una función para recorrer el ABB y mostrar los procesos
+			fmt.Println("\nLos 5 procesos con más uso de CPU:")
 			abb.ListarTop5()
 		}
 	}()
