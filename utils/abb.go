@@ -15,6 +15,10 @@ type ABB struct {
 }
 
 func (a *ABB) Insertar(nuevoNodo *Nodo) {
+	if a.BuscarPorPID(nuevoNodo.PID) {
+		//Eliminar nodo
+	}
+
 	a.Raiz = insertarRecursivo(a.Raiz, nuevoNodo)
 }
 
@@ -29,6 +33,28 @@ func insertarRecursivo(actual *Nodo, nuevo *Nodo) *Nodo {
 		actual.Der = insertarRecursivo(actual.Der, nuevo)
 	}
 	return actual
+}
+
+func (abb *ABB) BuscarPorPID(pid int) bool {
+	return buscarPorPIDRecursivo(abb.Raiz, pid)
+}
+
+func buscarPorPIDRecursivo(nodo *Nodo, pid int) bool {
+
+	if nodo == nil {
+		return false
+	}
+
+	if nodo.PID == pid {
+		return true
+	}
+
+	if pid < nodo.PID {
+		return buscarPorPIDRecursivo(nodo.Izq, pid)
+	} else {
+		return buscarPorPIDRecursivo(nodo.Der, pid)
+	}
+
 }
 
 func (a *ABB) ListarTop5() {
