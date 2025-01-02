@@ -5,11 +5,11 @@ import (
 )
 
 type Nodo struct {
-	Nombre   string
-	PID      int
-	CPUUsage float64
-	Izq      *Nodo
-	Der      *Nodo
+	Nombre string
+	PID    int
+	CPU    float64
+	Izq    *Nodo
+	Der    *Nodo
 }
 
 type ABB struct {
@@ -29,7 +29,7 @@ func insertarRecursivo(actual *Nodo, nuevo *Nodo) *Nodo {
 		return nuevo
 	}
 
-	if nuevo.CPUUsage < actual.CPUUsage {
+	if nuevo.CPU < actual.CPU {
 		actual.Izq = insertarRecursivo(actual.Izq, nuevo)
 	} else {
 		actual.Der = insertarRecursivo(actual.Der, nuevo)
@@ -75,7 +75,7 @@ func listarTop5Recursivo(nodo *Nodo, contador *int) {
 
 	if *contador < 5 {
 		*contador++
-		fmt.Printf("Proceso: %s, PID: %d, Uso de CPU: %.2f%%\n", nodo.Nombre, nodo.PID, nodo.CPUUsage)
+		fmt.Printf("Proceso: %s, PID: %d, Uso de CPU: %.2f%%\n", nodo.Nombre, nodo.PID, nodo.CPU)
 	}
 
 	listarTop5Recursivo(nodo.Izq, contador)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/shirou/gopsutil/v3/process"
 )
@@ -16,32 +17,30 @@ func VerProceso(pid int) {
 		return
 	}
 
-	nombre, _ := proc.Name()
-	usuario, _ := proc.Username()
-	cpuUsage, _ := proc.CPUPercent()
+	name, _ := proc.Name()
+	user, _ := proc.Username()
+	cpuP, _ := proc.CPUPercent()
 	memInfo, _ := proc.MemoryInfo()
-	createTime, _ := proc.CreateTime()
-	uptime := fmt.Sprintf("%d segundos", int64((createTime/1000))-int64(createTime))
+	memP, _ := proc.MemoryPercent()
+	pPid, _ := proc.Ppid()
+	parent, _ := process.NewProcess(int32(pPid))
+	parentName, _ := parent.Name()
 
 	fmt.Printf("Información del proceso con PID %d:\n", pid)
-	fmt.Printf("Nombre: %s\n", nombre)
-	fmt.Printf("Usuario: %s\n", usuario)
-	fmt.Printf("Uso de CPU: %.2f%%\n", cpuUsage)
-	if memInfo != nil {
-		fmt.Printf("Uso de Memoria: %.2f MB\n", float64(memInfo.RSS)/(1024*1024))
-	}
-	fmt.Printf("Uptime: %s\n", uptime)
+	fmt.Printf("Nombre: %s\n", name)
+	fmt.Printf("Usuario: %s\n", user)
+	fmt.Printf("CPU: %.2f%% | Memoria: %.2f MB (%.2f%%)\n", cpuP, float64(memInfo.RSS)/(1024*1024), memP)
+	fmt.Printf("Proceso padre: %s (PID: %d)\n", parentName, pPid)
 }
 
-func RastrearDetalleProceso(pid int) {
-	pid32 := int32(pid)
-	proc, err := process.NewProcess(pid32)
+func RastrearProceso(pid int) {
+	proc, err := process.NewProcess(int32(pid))
 	if err != nil {
 		fmt.Printf("Error al obtener el proceso con PID %d: %v\n", pid, err)
 		return
 	}
 
-	fmt.Printf("Iniciando rastreo del proceso con PID %d...\n", pid)
+	fmt.Printf("Rastreando detalles del proceso con PID %d...\n", pid)
 
 	name, _ := proc.Name()
 	exePath, _ := proc.Exe()
@@ -49,13 +48,31 @@ func RastrearDetalleProceso(pid int) {
 	username, _ := proc.Username()
 	cwd, _ := proc.Cwd()
 
-	fmt.Printf("Rastreando detalles del proceso con PID %d:\n", pid)
-	fmt.Printf("Nombre del proceso: %s\n", name)
-	fmt.Printf("Ruta del ejecutable: %s\n", exePath)
-	fmt.Printf("Línea de comandos: %s\n", cmdline)
-	fmt.Printf("Usuario que lo inició: %s\n", username)
-	fmt.Printf("Directorio de trabajo: %s\n", cwd)
-	fmt.Println("Ctrl+c para salir")
+	createTime, _ := proc.CreateTime()
+	uptime := time.Now().Unix() - (createTime / 1000)
+	createTimeFormatted := time.Unix(createTime/1000, 0).Format("2006-01-02 15:04:05")
+
+	parentPid, _ := proc.Ppid()
+	parent, _ := process.NewProcess(int32(parentPid))
+	parentName, _ := parent.Name()
+
+	openFiles, _ := proc.OpenFiles()
+	conns, _ := proc.Connections()
+
+	fmt.Printf("Nombre: %s | Ruta: %s | Usuario: %s\n", name, exePath, username)
+	fmt.Printf("Cmdline: %s | CWD: %s\n", cmdline, cwd)
+	fmt.Printf("Creado: %s | Uptime: %ds\n", createTimeFormatted, uptime)
+	fmt.Printf("Proceso padre: %s (PID: %d)\n", parentName, parentPid)
+
+	fmt.Println("Archivos abiertos:")
+	for _, f := range openFiles {
+		fmt.Printf("- %s\n", f.Path)
+	}
+
+	fmt.Println("Conexiones:")
+	for _, conn := range conns {
+		fmt.Printf("- Local: %s:%d -> Remoto: %s:%d (%s)\n", conn.Laddr.IP, conn.Laddr.Port, conn.Raddr.IP, conn.Raddr.Port, conn.Status)
+	}
 }
 
 func DarDeBaja(pid int) {

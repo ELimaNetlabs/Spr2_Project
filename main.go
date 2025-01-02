@@ -26,11 +26,11 @@ func monitorCPU() {
 
 	abb := &utils.ABB{}
 	cpuData := make(chan float64)
-	done := make(chan bool)
+	flag := make(chan bool)
 	var wg1 sync.WaitGroup
 
 	wg1.Add(1)
-	go monitor.MonitoreoCPU(cpuData, &wg1, done, abb)
+	go monitor.MonitoreoCPU(cpuData, &wg1, flag, abb)
 
 	m1 := make(chan bool)
 	var wg2 sync.WaitGroup
@@ -45,7 +45,7 @@ func monitorCPU() {
 			if input1 == "s" {
 				close(m1)
 				wg2.Wait()
-				close(done)
+				close(flag)
 				break
 			}
 			if input1 == "a" {
@@ -80,7 +80,7 @@ func monitorCPU() {
 					ui.Clear()
 					monitor.VerProceso(pid)
 
-					close(done)
+					close(flag)
 					break
 
 				}
@@ -91,8 +91,8 @@ func monitorCPU() {
 					var pid int
 					fmt.Scanln(&pid)
 					ui.Clear()
-					monitor.RastrearDetalleProceso(pid)
-					close(done)
+					monitor.RastrearProceso(pid)
+					close(flag)
 					break
 				}
 				if input2 == "m" {
@@ -103,7 +103,7 @@ func monitorCPU() {
 					fmt.Scanln(&pid)
 					ui.Clear()
 					monitor.DarDeBaja(pid)
-					close(done)
+					close(flag)
 					break
 				}
 			}

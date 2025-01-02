@@ -11,33 +11,33 @@ import (
 	"github.com/shirou/gopsutil/v3/process"
 )
 
-func MonitoreoCPU(data chan<- float64, wg *sync.WaitGroup, done <-chan bool, abb *utils.ABB) {
+func MonitoreoCPU(info chan<- float64, wg *sync.WaitGroup, flag <-chan bool, abb *utils.ABB) {
 	defer wg.Done()
 
 	for {
 		select {
-		case <-done:
+		case <-flag:
 			return
 		default:
 
-			percentages, err := cpu.Percent(1*time.Second, false)
+			pCPU, err := cpu.Percent(1*time.Second, false)
 			if err != nil {
-				fmt.Println("Error obteniendo uso de CPU:", err)
+				fmt.Println("Error:", err)
 				continue
 			}
 
-			if len(percentages) > 0 {
-				data <- percentages[0]
+			if len(pCPU) > 0 {
+				info <- pCPU[0]
 			}
 
-			processes, err := process.Processes()
+			proc, err := process.Processes()
 			if err != nil {
-				fmt.Println("Error obteniendo procesos:", err)
+				fmt.Println("Error:", err)
 				continue
 			}
 
-			for _, p := range processes {
-				cpuUsage, err := p.CPUPercent()
+			for _, p := range proc {
+				cpu, err := p.CPUPercent()
 				if err != nil {
 					continue
 				}
@@ -48,9 +48,9 @@ func MonitoreoCPU(data chan<- float64, wg *sync.WaitGroup, done <-chan bool, abb
 				}
 
 				nodo := &utils.Nodo{
-					Nombre:   name,
-					PID:      int(p.Pid),
-					CPUUsage: cpuUsage,
+					Nombre: name,
+					PID:    int(p.Pid),
+					CPU:    cpu,
 				}
 
 				abb.Insertar(nodo)
