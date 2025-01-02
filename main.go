@@ -33,10 +33,11 @@ func monitorCPU() {
 	wg1.Add(1)
 	go monitor.MonitoreoCPU(cpuData, &wg1, done, abb)
 
-	go func() {
-		m1 := make(chan bool)
-		go VerMonitoreo(cpuData, abb, m1, "Salir: s+Enter | Analizar proceso: a+Enter\n")
+	m1 := make(chan bool)
 
+	VerMonitoreo(cpuData, abb, m1, "Salir: s+Enter | Analizar proceso: a+Enter\n")
+
+	go func() {
 		var input1 string
 		for {
 			fmt.Scanln(&input1)
@@ -47,44 +48,47 @@ func monitorCPU() {
 			if input1 == "a" {
 				close(m1)
 				m2 := make(chan bool)
-				VerMonitoreo(cpuData, abb, m2, "Analizador de procesos\nVer info: v+Enter | Rastrear: r+Enter")
+
+				VerMonitoreo(cpuData, abb, m2, "Analizador de procesos\nVer info: v+Enter | Rastrear: r+Enter | Dar de baja m+Enter")
+
 				var input2 string
 				fmt.Scanln(&input2)
+
 				if input2 == "v" {
-					ui.Clear()
-					fmt.Println("Indique el PID+Enter para ver la info del proceso")
+					close(m2)
+					m3 := make(chan bool)
+
+					VerMonitoreo(cpuData, abb, m3, "Indique el PID+Enter para ver la info del proceso")
 
 					var pid int
 					fmt.Scanln(&pid)
 
 					pInfo := make(chan string)
+					//podria ser igual que el rastrear
 					var wg2 sync.WaitGroup
 					wg2.Add(1)
 					go monitor.VerProceso(pInfo, &wg2, pid)
-					go func() {
-						ui.Clear()
-						fmt.Println("Debajo del top 5 esta la info del proceso elegido")
-						for data := range pInfo {
-							fmt.Println(data)
-						}
-					}()
 					wg2.Wait()
+
+					close(m3)
+					ui.Clear()
+					//Podria ser una variable y no un canal
+					for data := range pInfo {
+						fmt.Println(data)
+					}
 
 					break
 				}
 				if input2 == "r" {
-					done := make(chan bool)
-					go func() {
-						var input string
-						fmt.Println("Escribe 's' para detener el rastreo.")
-						fmt.Scanln(&input)
-						if input == "s" {
-							close(done)
-						}
-					}()
 					var pid int
 					fmt.Scanln(&pid)
-					monitor.RastrearDetalleProceso(pid, done)
+					monitor.RastrearDetalleProceso(pid)
+					break
+				}
+				if input2 == "m" {
+					var pid int
+					fmt.Scanln(&pid)
+					monitor.DarDeBaja(pid)
 					break
 				}
 			}
@@ -92,6 +96,7 @@ func monitorCPU() {
 	}()
 
 	wg1.Wait()
+	ui.Clear()
 	fmt.Println("Monitoreo terminado.")
 }
 

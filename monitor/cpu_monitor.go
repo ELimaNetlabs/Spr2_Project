@@ -14,7 +14,6 @@ import (
 func MonitoreoCPU(data chan<- float64, wg *sync.WaitGroup, done <-chan bool, abb *utils.ABB) {
 	defer wg.Done()
 
-	//REVISAR HERRAMIENTA GOPSUTIL
 	for {
 		select {
 		case <-done:
@@ -59,5 +58,4 @@ func MonitoreoCPU(data chan<- float64, wg *sync.WaitGroup, done <-chan bool, abb
 
 		}
 	}
-	//
 }
