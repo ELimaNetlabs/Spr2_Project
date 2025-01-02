@@ -56,6 +56,7 @@ func MonitoreoCPU(data chan<- float64, wg *sync.WaitGroup, done <-chan bool, abb
 
 				abb.Insertar(nodo)
 			}
+
 		}
 	}
 	//

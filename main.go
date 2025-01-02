@@ -5,24 +5,22 @@ import (
 	"Spr2_Project/ui"
 	"Spr2_Project/utils"
 	"fmt"
-
-	//"os"
-	//"strings"
 	"sync"
 )
 
 func main() {
 	op := ui.MainMenu()
 
-	if op == 1 {
-		fmt.Print("\033[H\033[2J")
+	switch op {
+	case 1:
+		ui.Clear()
 		monitorCPU()
-	}
-	if op == 2 {
-		fmt.Print("\033[H\033[2J")
+	case 2:
+		ui.Clear()
 		monitorMemory()
+	default:
+		fmt.Println("Algo salio mal...")
 	}
-
 }
 
 func monitorCPU() {
@@ -30,14 +28,15 @@ func monitorCPU() {
 	abb := &utils.ABB{}
 	cpuData := make(chan float64)
 	done := make(chan bool)
-	var wg sync.WaitGroup
+	var wg1 sync.WaitGroup
 
-	wg.Add(1)
-	go monitor.MonitoreoCPU(cpuData, &wg, done, abb)
+	wg1.Add(1)
+	go monitor.MonitoreoCPU(cpuData, &wg1, done, abb)
 
 	go func() {
-		fmt.Print("\033[H\033[2J")
-		fmt.Println("Salir: s+Enter | Pausar: p+Enter")
+		m1 := make(chan bool)
+		go VerMonitoreo(cpuData, abb, m1, "Salir: s+Enter | Analizar proceso: a+Enter\n")
+
 		var input1 string
 		for {
 			fmt.Scanln(&input1)
@@ -45,36 +44,77 @@ func monitorCPU() {
 				close(done)
 				break
 			}
-			if input1 == "p" {
-				close(done)
-				fmt.Println("Monitoreo pausado")
-				fmt.Println("Ver info: v+Enter | Rastrear: r+Enter")
+			if input1 == "a" {
+				close(m1)
+				m2 := make(chan bool)
+				VerMonitoreo(cpuData, abb, m2, "Analizador de procesos\nVer info: v+Enter | Rastrear: r+Enter")
 				var input2 string
 				fmt.Scanln(&input2)
 				if input2 == "v" {
-					go monitor.VerProceso(input2)
+					ui.Clear()
+					fmt.Println("Indique el PID+Enter para ver la info del proceso")
+
+					var pid int
+					fmt.Scanln(&pid)
+
+					pInfo := make(chan string)
+					var wg2 sync.WaitGroup
+					wg2.Add(1)
+					go monitor.VerProceso(pInfo, &wg2, pid)
+					go func() {
+						ui.Clear()
+						fmt.Println("Debajo del top 5 esta la info del proceso elegido")
+						for data := range pInfo {
+							fmt.Println(data)
+						}
+					}()
+					wg2.Wait()
+
 					break
 				}
 				if input2 == "r" {
-					go monitor.VerProceso(input2)
+					done := make(chan bool)
+					go func() {
+						var input string
+						fmt.Println("Escribe 's' para detener el rastreo.")
+						fmt.Scanln(&input)
+						if input == "s" {
+							close(done)
+						}
+					}()
+					var pid int
+					fmt.Scanln(&pid)
+					monitor.RastrearDetalleProceso(pid, done)
 					break
 				}
 			}
 		}
 	}()
 
-	go func() {
+	wg1.Wait()
+	fmt.Println("Monitoreo terminado.")
+}
+
+func VerMonitoreo(cpuData <-chan float64, abb *utils.ABB, m <-chan bool, opInfo string) {
+	select {
+	case <-m:
+		return
+	default:
 		for usage := range cpuData {
-			fmt.Print("\033[2;1H")
-			fmt.Println("Monitoreando uso de CPU...")
-			fmt.Printf("\nUso de CPU: %.2f%%", usage)
+			ui.Clear()
+			fmt.Println(opInfo)
+			fmt.Print("Monitoreando uso de CPU...\n")
+			fmt.Printf("Uso de CPU: %.2f%%", usage)
+
+			if abb.Raiz == nil {
+				fmt.Println("\nEsperando datos...")
+				continue
+			}
+
 			fmt.Println("\nLos 5 procesos con más uso de CPU:")
 			abb.ListarTop5()
 		}
-	}()
-
-	wg.Wait()
-	fmt.Println("Monitoreo terminado.")
+	}
 }
 
 func monitorMemory() {

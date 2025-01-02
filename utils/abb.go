@@ -1,6 +1,8 @@
 package utils
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Nodo struct {
 	Nombre   string
@@ -16,7 +18,7 @@ type ABB struct {
 
 func (a *ABB) Insertar(nuevoNodo *Nodo) {
 	if a.BuscarPorPID(nuevoNodo.PID) {
-		//Eliminar nodo
+		a.Raiz = nil
 	}
 
 	a.Raiz = insertarRecursivo(a.Raiz, nuevoNodo)
@@ -59,6 +61,7 @@ func buscarPorPIDRecursivo(nodo *Nodo, pid int) bool {
 
 func (a *ABB) ListarTop5() {
 	contador := 0
+
 	listarTop5Recursivo(a.Raiz, &contador)
 }
 

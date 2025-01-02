@@ -8,7 +8,7 @@ import (
 func MainMenu() int {
 
 	for {
-		fmt.Print("\033[H\033[2J")
+		Clear()
 		fmt.Println("Programa de monitoreo para cpu y memoria ram")
 		fmt.Println("Seleccione una opcion:")
 		fmt.Println("1-Ver uso del cpu")
@@ -28,7 +28,7 @@ func MainMenu() int {
 			return 2
 		default:
 			fmt.Println("Opción no válida")
-			time.Sleep(1 * time.Second)
+			time.Sleep(2 * time.Second)
 		}
 
 	}
