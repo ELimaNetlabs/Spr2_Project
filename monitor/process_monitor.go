@@ -4,44 +4,35 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"sync"
 
 	"github.com/shirou/gopsutil/v3/process"
 )
 
-func VerProceso(info chan<- string, wg2 *sync.WaitGroup, pid int) {
-	defer wg2.Done()
-
+func VerProceso(pid int) {
 	pid32 := int32(pid)
 	proc, err := process.NewProcess(pid32)
 	if err != nil {
-		info <- fmt.Sprintf("Error al obtener el proceso con PID %d: %v", pid, err)
+		fmt.Printf("Error al obtener el proceso con PID %d: %v\n", pid, err)
 		return
 	}
 
-	// Recopilar información básica
 	nombre, _ := proc.Name()
 	usuario, _ := proc.Username()
 	cpuUsage, _ := proc.CPUPercent()
 	memInfo, _ := proc.MemoryInfo()
 	createTime, _ := proc.CreateTime()
-	uptime := fmt.Sprintf("%d segundos", (int64((createTime / 1000)) - int64(createTime)))
+	uptime := fmt.Sprintf("%d segundos", int64((createTime/1000))-int64(createTime))
 
-	// Formatear la información en un string
-	data := fmt.Sprintf(
-		"Información del proceso con PID %d:\nNombre: %s\nUsuario: %s\nUso de CPU: %.2f%%\n",
-		pid, nombre, usuario, cpuUsage,
-	)
+	fmt.Printf("Información del proceso con PID %d:\n", pid)
+	fmt.Printf("Nombre: %s\n", nombre)
+	fmt.Printf("Usuario: %s\n", usuario)
+	fmt.Printf("Uso de CPU: %.2f%%\n", cpuUsage)
 	if memInfo != nil {
-		data += fmt.Sprintf("Uso de Memoria: %.2f MB\n", float64(memInfo.RSS)/(1024*1024))
+		fmt.Printf("Uso de Memoria: %.2f MB\n", float64(memInfo.RSS)/(1024*1024))
 	}
-	data += fmt.Sprintf("Uptime: %s\n", uptime)
-
-	// Enviar la información al canal
-	info <- data
+	fmt.Printf("Uptime: %s\n", uptime)
 }
 
-// RastrearDetalleProceso obtiene detalles avanzados de un proceso.
 func RastrearDetalleProceso(pid int) {
 	pid32 := int32(pid)
 	proc, err := process.NewProcess(pid32)
@@ -52,11 +43,11 @@ func RastrearDetalleProceso(pid int) {
 
 	fmt.Printf("Iniciando rastreo del proceso con PID %d...\n", pid)
 
-	name, _ := proc.Name()         // Nombre del proceso
-	exePath, _ := proc.Exe()       // Ruta completa del ejecutable
-	cmdline, _ := proc.Cmdline()   // Línea de comandos usada para iniciar el proceso
-	username, _ := proc.Username() // Usuario que inició el proceso
-	cwd, _ := proc.Cwd()           // Directorio de trabajo actual del proceso
+	name, _ := proc.Name()
+	exePath, _ := proc.Exe()
+	cmdline, _ := proc.Cmdline()
+	username, _ := proc.Username()
+	cwd, _ := proc.Cwd()
 
 	fmt.Printf("Rastreando detalles del proceso con PID %d:\n", pid)
 	fmt.Printf("Nombre del proceso: %s\n", name)
@@ -64,6 +55,7 @@ func RastrearDetalleProceso(pid int) {
 	fmt.Printf("Línea de comandos: %s\n", cmdline)
 	fmt.Printf("Usuario que lo inició: %s\n", username)
 	fmt.Printf("Directorio de trabajo: %s\n", cwd)
+	fmt.Println("Ctrl+c para salir")
 }
 
 func DarDeBaja(pid int) {
@@ -73,5 +65,8 @@ func DarDeBaja(pid int) {
 	err := cmd.Run()
 	if err != nil {
 		fmt.Println("Error al intentar matar el proceso:", err)
+	} else {
+		fmt.Println("Proceso eliminado")
 	}
+	fmt.Println("Ctrl+c para salir")
 }

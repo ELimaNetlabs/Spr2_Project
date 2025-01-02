@@ -9,22 +9,17 @@ func MainMenu() int {
 
 	for {
 		Clear()
-		fmt.Println("Programa de monitoreo para cpu y memoria ram")
-		fmt.Println("Seleccione una opcion:")
-		fmt.Println("1-Ver uso del cpu")
-		fmt.Println("2-Ver uso de la memoria ram")
+		fmt.Println("Programa de monitoreo para cpu")
+		fmt.Println("Iniciar? s/n")
 
-		var input int
+		var input string
 		fmt.Scanln(&input)
-		fmt.Println("Ingresaste:", input)
 
 		switch input {
-		case 1:
-			fmt.Println("Elegiste la opción 1")
+		case "s":
 			return 1
 
-		case 2:
-			fmt.Println("Elegiste la opción 2")
+		case "n":
 			return 2
 		default:
 			fmt.Println("Opción no válida")

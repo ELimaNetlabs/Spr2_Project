@@ -16,8 +16,7 @@ func main() {
 		ui.Clear()
 		monitorCPU()
 	case 2:
-		ui.Clear()
-		monitorMemory()
+		fmt.Println("Hasta luego.")
 	default:
 		fmt.Println("Algo salio mal...")
 	}
@@ -34,61 +33,77 @@ func monitorCPU() {
 	go monitor.MonitoreoCPU(cpuData, &wg1, done, abb)
 
 	m1 := make(chan bool)
+	var wg2 sync.WaitGroup
 
-	VerMonitoreo(cpuData, abb, m1, "Salir: s+Enter | Analizar proceso: a+Enter\n")
+	wg2.Add(1)
+	go VerMonitoreo(cpuData, abb, m1, &wg2, "Salir: s+Enter | Analizar proceso: a+Enter\n")
 
 	go func() {
 		var input1 string
 		for {
 			fmt.Scanln(&input1)
 			if input1 == "s" {
+				close(m1)
+				wg2.Wait()
 				close(done)
 				break
 			}
 			if input1 == "a" {
 				close(m1)
-				m2 := make(chan bool)
+				wg2.Wait()
 
-				VerMonitoreo(cpuData, abb, m2, "Analizador de procesos\nVer info: v+Enter | Rastrear: r+Enter | Dar de baja m+Enter")
+				m2 := make(chan bool)
+				var wg3 sync.WaitGroup
+
+				wg3.Add(1)
+
+				go VerMonitoreo(cpuData, abb, m2, &wg3, "Analizador de procesos\nVer info: v+Enter | Rastrear: r+Enter | Dar de baja m+Enter")
 
 				var input2 string
 				fmt.Scanln(&input2)
 
 				if input2 == "v" {
 					close(m2)
+					wg3.Wait()
 					m3 := make(chan bool)
+					var wg4 sync.WaitGroup
 
-					VerMonitoreo(cpuData, abb, m3, "Indique el PID+Enter para ver la info del proceso")
+					wg4.Add(1)
+
+					go VerMonitoreo(cpuData, abb, m3, &wg4, "Indique el PID+Enter para ver la info del proceso")
 
 					var pid int
 					fmt.Scanln(&pid)
-
-					pInfo := make(chan string)
 					//podria ser igual que el rastrear
-					var wg2 sync.WaitGroup
-					wg2.Add(1)
-					go monitor.VerProceso(pInfo, &wg2, pid)
-					wg2.Wait()
-
 					close(m3)
+					wg4.Wait()
 					ui.Clear()
-					//Podria ser una variable y no un canal
-					for data := range pInfo {
-						fmt.Println(data)
-					}
+					monitor.VerProceso(pid)
 
+					close(done)
 					break
+
 				}
 				if input2 == "r" {
+					close(m2)
+					wg3.Wait()
+					fmt.Println("Indique el PID+Enter")
 					var pid int
 					fmt.Scanln(&pid)
+					ui.Clear()
 					monitor.RastrearDetalleProceso(pid)
+					close(done)
 					break
 				}
 				if input2 == "m" {
+					close(m2)
+					wg3.Wait()
+					fmt.Println("Indique el PID+Enter")
 					var pid int
 					fmt.Scanln(&pid)
+					ui.Clear()
 					monitor.DarDeBaja(pid)
+					close(done)
 					break
 				}
 			}
@@ -96,16 +111,17 @@ func monitorCPU() {
 	}()
 
 	wg1.Wait()
-	ui.Clear()
 	fmt.Println("Monitoreo terminado.")
 }
 
-func VerMonitoreo(cpuData <-chan float64, abb *utils.ABB, m <-chan bool, opInfo string) {
-	select {
-	case <-m:
-		return
-	default:
-		for usage := range cpuData {
+func VerMonitoreo(cpuData <-chan float64, abb *utils.ABB, m <-chan bool, wg2 *sync.WaitGroup, opInfo string) {
+	defer wg2.Done()
+
+	for usage := range cpuData {
+		select {
+		case <-m:
+			return
+		default:
 			ui.Clear()
 			fmt.Println(opInfo)
 			fmt.Print("Monitoreando uso de CPU...\n")
@@ -120,8 +136,5 @@ func VerMonitoreo(cpuData <-chan float64, abb *utils.ABB, m <-chan bool, opInfo 
 			abb.ListarTop5()
 		}
 	}
-}
 
-func monitorMemory() {
-	fmt.Println("Monitoreando uso de memoria...")
 }
